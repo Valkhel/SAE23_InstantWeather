@@ -22,7 +22,7 @@
             <div class="search-card">
                 <h2><i class="fas fa-search"></i> Rechercher une commune</h2>
                 
-                <form id="weatherForm" class="weather-form">
+                <form id="weatherForm" class="weather-form" role="form" aria-label="Formulaire de recherche météo">
                     <!-- Code postal -->
                     <div class="form-group">
                         <label for="postalCode">Code postal :</label>
@@ -32,23 +32,76 @@
                                pattern="[0-9]{5}" 
                                maxlength="5" 
                                placeholder="Ex: 75001"
+                               aria-describedby="postalCodeHelp"
                                required>
-                        <small>Saisir un code postal français (5 chiffres)</small>
+                        <small id="postalCodeHelp">Saisir un code postal français (5 chiffres)</small>
                     </div>
 
                     <!-- Sélecteur de commune -->
                     <div class="form-group" id="communeGroup" style="display: none;">
                         <label for="commune">Commune :</label>
-                        <select id="commune" name="commune">
+                        <select id="commune" name="commune" aria-describedby="communeHelp">
                             <option value="">Choisir une commune...</option>
                         </select>
-                        <small>Sélectionner la commune souhaitée</small>
+                        <small id="communeHelp">Sélectionner la commune souhaitée</small>
                     </div>
 
-                    <button type="submit" class="submit-btn">
+                    <!-- Nombre de jours -->
+                    <div class="form-group">
+                        <label for="days">Nombre de jours de prévision :</label>
+                        <input type="range" 
+                               id="days" 
+                               name="days" 
+                               min="1" 
+                               max="7" 
+                               value="3" 
+                               aria-describedby="daysHelp">
+                        <output id="daysOutput" for="days">3</output>
+                        <small id="daysHelp">De 1 à 7 jours</small>
+                    </div>
+
+                    <!-- Options supplémentaires -->
+                    <fieldset class="additional-options">
+                        <legend>Informations supplémentaires</legend>
+                        
+                        <div class="checkbox-grid">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="showLatitude" name="additionalInfo" value="latitude">
+                                <span class="checkmark"></span>
+                                <i class="fas fa-map-marker-alt"></i> Latitude
+                            </label>
+                            
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="showLongitude" name="additionalInfo" value="longitude">
+                                <span class="checkmark"></span>
+                                <i class="fas fa-map-marker-alt"></i> Longitude
+                            </label>
+                            
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="showRainfall" name="additionalInfo" value="rainfall">
+                                <span class="checkmark"></span>
+                                <i class="fas fa-tint"></i> Cumul de pluie (mm)
+                            </label>
+                            
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="showWind" name="additionalInfo" value="wind">
+                                <span class="checkmark"></span>
+                                <i class="fas fa-wind"></i> Vent moyen (km/h)
+                            </label>
+                            
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="showWindDirection" name="additionalInfo" value="windDirection">
+                                <span class="checkmark"></span>
+                                <i class="fas fa-compass"></i> Direction du vent (°)
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <button type="submit" class="submit-btn" aria-describedby="submitHelp">
                         <i class="fas fa-cloud-sun"></i>
                         Obtenir les prévisions
                     </button>
+                    <small id="submitHelp">Cliquer pour lancer la recherche météorologique</small>
                 </form>
             </div>
         </section>
