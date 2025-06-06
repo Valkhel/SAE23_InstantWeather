@@ -105,6 +105,32 @@
                 </form>
             </div>
         </section>
+
+        <!-- Zone de chargement -->
+        <div id="loading" class="loading" style="display: none;" role="status" aria-live="polite">
+            <div class="spinner"></div>
+            <p>Chargement des données météorologiques...</p>
+        </div>
+
+        <!-- Zone d'erreur -->
+        <div id="error" class="error-message" style="display: none;" role="alert" aria-live="assertive">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p id="errorText"></p>
+        </div>
+
+        <!-- Résultats météo -->
+        <section id="results" class="results-section" style="display: none;">
+            <h2 id="resultsTitle" class="results-title"></h2>
+            
+            <!-- Cartes météo -->
+            <div class="weather-section">
+                <h3 class="weather-title">
+                    <i class="fas fa-cloud-sun"></i>
+                    Prévisions météorologiques
+                </h3>
+                <div id="weatherCards" class="weather-cards-container"></div>
+            </div>
+        </section>
     </div>
 </body>
 </html>
