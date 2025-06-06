@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Météo France - Prévisions Locales</title>
+    <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -58,7 +59,7 @@
                                max="7" 
                                value="3" 
                                aria-describedby="daysHelp">
-                        <output id="daysOutput" for="days">3</o>
+                        <output id="daysOutput" for="days">3</output>
                         <small id="daysHelp">De 1 à 7 jours</small>
                     </div>
 
@@ -149,5 +150,319 @@
             <p><small> SAE23 </small></p>
         </footer>
     </div>
+
+    <script>
+        // Configuration des APIs (TOKENS À MODIFIER)
+        const API_CONFIG = {
+            METEO_TOKEN: '974bc36ca010cfac6a694cd4e022fd4774b8c4a7786a1fd7e3d81e9bd60d37a3',
+            GEO_API_BASE: 'https://geo.api.gouv.fr',
+            METEO_API_BASE: 'https://api.meteo-concept.com/api'
+        };
+
+        // Variables globales
+        let currentCommunes = [];
+        let selectedCommune = null;
+        let map = null;
+        let mapMarker = null;
+
+        // Classe WeatherCard
+        class WeatherCard {
+            constructor(data, options = {}) {
+                this.data = data;
+                this.options = options;
+            }
+
+            render() {
+                const card = document.createElement('div');
+                card.className = 'weather-card';
+                card.setAttribute('role', 'article');
+                card.setAttribute('tabindex', '0');
+
+                // Date
+                const date = new Date(this.data.datetime || Date.now());
+                const dateStr = date.toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long'
+                });
+
+                // Icône météo basée sur les conditions
+                const weatherIcon = this.getWeatherIcon();
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="card-date">${dateStr}</h3>
+                        <div class="weather-icon">
+                            <i class="${weatherIcon}"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="temperature-section">
+                            <div class="temp-item">
+                                <i class="fas fa-thermometer-half" aria-hidden="true"></i>
+                                <span class="temp-label">Min:</span>
+                                <span class="temp-value">${this.data.tmin || 'N/A'}°C</span>
+                            </div>
+                            <div class="temp-item">
+                                <i class="fas fa-thermometer-full" aria-hidden="true"></i>
+                                <span class="temp-label">Max:</span>
+                                <span class="temp-value">${this.data.tmax || 'N/A'}°C</span>
+                            </div>
+                        </div>
+
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-cloud-rain" aria-hidden="true"></i>
+                                <span>Probabilité pluie: ${this.data.probarain || 0}%</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-sun" aria-hidden="true"></i>
+                                <span>Ensoleillement: ${this.data.sun_hours || 0}h</span>
+                            </div>
+                        </div>
+
+                        ${this.renderAdditionalInfo()}
+                    </div>
+                `;
+
+                return card;
+            }
+
+            getWeatherIcon() {
+                const rain = this.data.probarain || 0;
+                const sun = this.data.sun_hours || 0;
+
+                if (rain > 70) return 'fas fa-cloud-rain';
+                if (rain > 30) return 'fas fa-cloud-sun-rain';
+                if (sun > 6) return 'fas fa-sun';
+                if (sun > 3) return 'fas fa-cloud-sun';
+                return 'fas fa-cloud';
+            }
+
+            renderAdditionalInfo() {
+                let html = '';
+                
+                if (this.options.showLatitude && selectedCommune) {
+                    html += `<div class="additional-info"><i class="fas fa-map-marker-alt"></i> Latitude: ${selectedCommune.latitude}°</div>`;
+                }
+                
+                if (this.options.showLongitude && selectedCommune) {
+                    html += `<div class="additional-info"><i class="fas fa-map-marker-alt"></i> Longitude: ${selectedCommune.longitude}°</div>`;
+                }
+                
+                if (this.options.showRainfall) {
+                    html += `<div class="additional-info"><i class="fas fa-tint"></i> Cumul pluie: ${this.data.rr10 || 0} mm</div>`;
+                }
+                
+                if (this.options.showWind) {
+                    html += `<div class="additional-info"><i class="fas fa-wind"></i> Vent: ${this.data.wind10m || 0} km/h</div>`;
+                }
+                
+                if (this.options.showWindDirection) {
+                    html += `<div class="additional-info"><i class="fas fa-compass"></i> Direction: ${this.data.dirwind10m || 0}°</div>`;
+                }
+
+                return html ? `<div class="additional-info-section">${html}</div>` : '';
+            }
+        }
+
+        // Gestionnaire de soumission du formulaire
+        document.getElementById('weatherForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!selectedCommune) {
+                showError('Veuillez sélectionner une commune');
+                return;
+            }
+
+            const days = document.getElementById('days').value;
+            const additionalOptions = getAdditionalOptions();
+
+            try {
+                showLoading(true);
+                const weatherData = await fetchWeatherData(selectedCommune.code, days);
+                displayWeatherResults(weatherData, additionalOptions, selectedCommune.nom);
+            } catch (error) {
+                showError('Erreur lors de la récupération des données météo: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Recherche de communes par code postal
+        document.getElementById('postalCode').addEventListener('input', async function(e) {
+            const postalCode = e.target.value;
+            
+            if (postalCode.length === 5 && /^\d{5}$/.test(postalCode)) {
+                try {
+                    const communes = await fetchCommunes(postalCode);
+                    populateCommuneSelect(communes);
+                } catch (error) {
+                    showError('Erreur lors de la recherche des communes');
+                }
+            } else {
+                document.getElementById('communeGroup').style.display = 'none';
+            }
+        });
+
+        // Sélection de commune
+        document.getElementById('commune').addEventListener('change', function(e) {
+            const communeCode = e.target.value;
+            selectedCommune = currentCommunes.find(c => c.code === communeCode);
+        });
+
+        // Slider pour les jours
+        document.getElementById('days').addEventListener('input', function(e) {
+            document.getElementById('daysOutput').textContent = e.target.value;
+        });
+
+        // Fonctions utilitaires
+        async function fetchCommunes(postalCode) {
+            const response = await fetch(`${API_CONFIG.GEO_API_BASE}/communes?codePostal=${postalCode}&fields=nom,code,codesPostaux,centre`);
+            if (!response.ok) throw new Error('Erreur API géographique');
+            return response.json();
+        }
+
+        async function fetchWeatherData(communeCode, days) {
+            // L'API retourne 14 jours de prévisions, on récupère tout puis on filtre
+            const response = await fetch(`${API_CONFIG.METEO_API_BASE}/forecast/daily?token=${API_CONFIG.METEO_TOKEN}&insee=${communeCode}&days=14`);
+            if (!response.ok) throw new Error('Erreur API météo');
+            const data = await response.json();
+            
+            // Limiter aux nombre de jours demandés (1 à 7)
+            const allForecasts = data.forecast || [];
+            return allForecasts.slice(0, parseInt(days));
+        }
+
+        function populateCommuneSelect(communes) {
+            currentCommunes = communes.map(c => ({
+                code: c.code,
+                nom: c.nom,
+                latitude: c.centre?.coordinates[1],
+                longitude: c.centre?.coordinates[0]
+            }));
+
+            const select = document.getElementById('commune');
+            select.innerHTML = '<option value="">Choisir une commune...</option>';
+            
+            currentCommunes.forEach(commune => {
+                const option = document.createElement('option');
+                option.value = commune.code;
+                option.textContent = commune.nom;
+                select.appendChild(option);
+            });
+
+            document.getElementById('communeGroup').style.display = 'block';
+        }
+
+        function getAdditionalOptions() {
+            const checkboxes = document.querySelectorAll('input[name="additionalInfo"]:checked');
+            const options = {};
+            checkboxes.forEach(cb => {
+                options[`show${cb.value.charAt(0).toUpperCase() + cb.value.slice(1)}`] = true;
+            });
+            return options;
+        }
+
+        function displayWeatherResults(weatherData, options, communeName) {
+            const container = document.getElementById('weatherCards');
+            const title = document.getElementById('resultsTitle');
+            
+            title.textContent = `Prévisions pour ${communeName}`;
+            container.innerHTML = '';
+
+            // Afficher les cartes météo (limitées au nombre de jours sélectionnés)
+            weatherData.forEach(dayData => {
+                const card = new WeatherCard(dayData, options);
+                container.appendChild(card.render());
+            });
+
+            // Initialiser ou mettre à jour la carte
+            initializeMap();
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Fonction pour initialiser la carte Leaflet
+        function initializeMap() {
+            if (!selectedCommune || !selectedCommune.latitude || !selectedCommune.longitude) {
+                return;
+            }
+
+            const lat = selectedCommune.latitude;
+            const lng = selectedCommune.longitude;
+
+            // Détruire la carte existante si elle existe
+            if (map) {
+                map.remove();
+            }
+
+            // Créer une nouvelle carte
+            map = L.map('map').setView([lat, lng], 13);
+
+            // Ajouter la couche de tuiles OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 18,
+            }).addTo(map);
+
+            // Créer une icône personnalisée
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<i class="fas fa-map-marker-alt" style="color: #2563eb; font-size: 2rem;"></i>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30],
+                popupAnchor: [0, -30]
+            });
+
+            // Ajouter un marqueur avec popup
+            mapMarker = L.marker([lat, lng], { icon: customIcon })
+                .addTo(map)
+                .bindPopup(`
+                    <div class="map-popup">
+                        <h4>${selectedCommune.nom}</h4>
+                        <p><strong>Latitude:</strong> ${lat.toFixed(6)}°</p>
+                        <p><strong>Longitude:</strong> ${lng.toFixed(6)}°</p>
+                        <p><i class="fas fa-cloud-sun"></i> Commune sélectionnée pour les prévisions météo</p>
+                    </div>
+                `)
+                .openPopup();
+
+            // Ajouter un cercle pour délimiter la zone
+            L.circle([lat, lng], {
+                color: '#2563eb',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.1,
+                radius: 2000
+            }).addTo(map);
+
+            // Ajuster la vue pour inclure le cercle
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animation d'entrée
+            document.querySelector('.header').classList.add('fade-in');
+        });
+    </script>
 </body>
 </html>
