@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Météo France - Prévisions Locales</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -56,7 +58,7 @@
                                max="7" 
                                value="3" 
                                aria-describedby="daysHelp">
-                        <output id="daysOutput" for="days">3</output>
+                        <output id="daysOutput" for="days">3</o>
                         <small id="daysHelp">De 1 à 7 jours</small>
                     </div>
 
@@ -122,6 +124,15 @@
         <section id="results" class="results-section" style="display: none;">
             <h2 id="resultsTitle" class="results-title"></h2>
             
+            <!-- Carte de localisation -->
+            <div class="map-container">
+                <h3 class="map-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Localisation de la commune
+                </h3>
+                <div id="map" class="leaflet-map"></div>
+            </div>
+            
             <!-- Cartes météo -->
             <div class="weather-section">
                 <h3 class="weather-title">
@@ -131,6 +142,12 @@
                 <div id="weatherCards" class="weather-cards-container"></div>
             </div>
         </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; All Rights Reserved - Hippolyte Foreau </p>
+            <p><small> SAE23 </small></p>
+        </footer>
     </div>
 </body>
 </html>
