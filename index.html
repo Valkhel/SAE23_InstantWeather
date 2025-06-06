@@ -16,6 +16,42 @@
             <h1 class="main-title">Météo France</h1>
             <p class="subtitle">SAE23</p>
         </header>
+
+        <!-- Formulaire de recherche -->
+        <section class="search-section">
+            <div class="search-card">
+                <h2><i class="fas fa-search"></i> Rechercher une commune</h2>
+                
+                <form id="weatherForm" class="weather-form">
+                    <!-- Code postal -->
+                    <div class="form-group">
+                        <label for="postalCode">Code postal :</label>
+                        <input type="text" 
+                               id="postalCode" 
+                               name="postalCode" 
+                               pattern="[0-9]{5}" 
+                               maxlength="5" 
+                               placeholder="Ex: 75001"
+                               required>
+                        <small>Saisir un code postal français (5 chiffres)</small>
+                    </div>
+
+                    <!-- Sélecteur de commune -->
+                    <div class="form-group" id="communeGroup" style="display: none;">
+                        <label for="commune">Commune :</label>
+                        <select id="commune" name="commune">
+                            <option value="">Choisir une commune...</option>
+                        </select>
+                        <small>Sélectionner la commune souhaitée</small>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-cloud-sun"></i>
+                        Obtenir les prévisions
+                    </button>
+                </form>
+            </div>
+        </section>
     </div>
 </body>
 </html>
