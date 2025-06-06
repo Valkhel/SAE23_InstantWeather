@@ -32,3 +32,7 @@ Quelques options suplémentaires 😽 :
 À vos parapluies ! ☔
 
 ## Lien du site : https://valkhel.github.io/SAE23_InstantWeather/
+
+Hippolyte Foreau - Projet de première année de BUT Réseaux et Télécommunication
+
+Fait uniquement en HTML et CSS et Visual Studio Code
